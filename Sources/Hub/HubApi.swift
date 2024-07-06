@@ -22,7 +22,11 @@ public struct HubApi {
             self.downloadBase = downloadBase
         } else {
             let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-            self.downloadBase = documents.appending(component: "huggingface")
+            if #available(iOS 16.0, *) {
+                self.downloadBase = documents.appending(component: "huggingface")
+            } else {
+                self.downloadBase = documents.appendingPathComponent("huggingface")
+            }
         }
         self.endpoint = endpoint
         self.useBackgroundSession = useBackgroundSession
@@ -93,8 +97,13 @@ public extension HubApi {
     /// Assumes the file has already been downloaded.
     /// `filename` is relative to the download base.
     func configuration(from filename: String, in repo: Repo) throws -> Config {
-        let fileURL = localRepoLocation(repo).appending(path: filename)
-        return try configuration(fileURL: fileURL)
+        if #available(iOS 16.0, *) {
+            let fileURL = localRepoLocation(repo).appending(path: filename)
+            return try configuration(fileURL: fileURL)
+        } else {
+            let fileURL = localRepoLocation(repo).appendingPathComponent(filename)
+            return try configuration(fileURL: fileURL)
+        }
     }
     
     /// Assumes the file is already present at local url.
@@ -124,7 +133,11 @@ public extension HubApi {
 /// Snaphsot download
 public extension HubApi {
     func localRepoLocation(_ repo: Repo) -> URL {
-        downloadBase.appending(component: repo.type.rawValue).appending(component: repo.id)
+        if #available(iOS 16.0, *) {
+            downloadBase.appending(component: repo.type.rawValue).appending(component: repo.id)
+        } else {
+            downloadBase.appendingPathComponent(repo.type.rawValue).appendingPathComponent(repo.id)
+        }
     }
     
     struct HubFileDownloader {
@@ -138,17 +151,23 @@ public extension HubApi {
         var source: URL {
             // https://huggingface.co/coreml-projects/Llama-2-7b-chat-coreml/resolve/main/tokenizer.json?download=true
             var url = URL(string: endpoint ?? "https://huggingface.co")!
-            if repo.type != .models {
-                url = url.appending(component: repo.type.rawValue)
+            if #available(iOS 16.0, *) {
+                if repo.type != .models {
+                    url = url.appending(component: repo.type.rawValue)
+                }
+                url = url.appending(path: repo.id)
+                url = url.appending(path: "resolve/main") // TODO: revisions
+                url = url.appending(path: relativeFilename)
             }
-            url = url.appending(path: repo.id)
-            url = url.appending(path: "resolve/main") // TODO: revisions
-            url = url.appending(path: relativeFilename)
             return url
         }
         
         var destination: URL {
-            repoDestination.appending(path: relativeFilename)
+            if #available(iOS 16.0, *) {
+                return repoDestination.appending(path: relativeFilename)
+            } else {
+                return repoDestination.appendingPathComponent(relativeFilename)
+            }
         }
         
         var downloaded: Bool {

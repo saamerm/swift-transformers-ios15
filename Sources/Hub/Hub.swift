@@ -189,16 +189,29 @@ public class LanguageModelConfigurationFromHub {
         hubApi: HubApi = .shared
     ) async throws -> Configurations {
         // Note tokenizerConfig may be nil (does not exist in all models)
-        let modelConfig = try hubApi.configuration(fileURL: modelFolder.appending(path: "config.json"))
-        let tokenizerConfig = try? hubApi.configuration(fileURL: modelFolder.appending(path: "tokenizer_config.json"))
-        let tokenizerVocab = try hubApi.configuration(fileURL: modelFolder.appending(path: "tokenizer.json"))
-        
-        let configs = Configurations(
-            modelConfig: modelConfig,
-            tokenizerConfig: tokenizerConfig,
-            tokenizerData: tokenizerVocab
-        )
-        return configs
+        var iOS15Url = URL(fileURLWithPath: "")
+        if #available(iOS 16.0, *) {
+            let modelConfig = try hubApi.configuration(fileURL: modelFolder.appending(path: "config.json"))
+            let tokenizerConfig = try? hubApi.configuration(fileURL: modelFolder.appending(path: "tokenizer_config.json"))
+            let tokenizerVocab = try hubApi.configuration(fileURL: modelFolder.appending(path: "tokenizer.json"))
+            let configs = Configurations(
+                modelConfig: modelConfig,
+                tokenizerConfig: tokenizerConfig,
+                tokenizerData: tokenizerVocab
+            )
+            return configs
+        } else {
+            let modelConfig = try hubApi.configuration(fileURL: iOS15Url)
+            let tokenizerConfig = try? hubApi.configuration(fileURL: iOS15Url)
+            let tokenizerVocab = try hubApi.configuration(fileURL: iOS15Url)
+            let configs = Configurations(
+                modelConfig: modelConfig,
+                tokenizerConfig: tokenizerConfig,
+                tokenizerData: tokenizerVocab
+            )
+            return configs
+
+        }
     }
 
     static func fallbackTokenizerConfig(for modelType: String) -> Config? {

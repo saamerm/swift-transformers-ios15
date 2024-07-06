@@ -70,8 +70,9 @@ class UnigramTokenizer: PreTrainedTokenizerModel {
         eosTokenId = eosToken == nil ? nil : tokensToIds[eosToken!]
         
         trie = Trie()
-        trie.append(contentsOf: vocab.map { $0.token })
-                
+        if #available(iOS 16.0, *) {
+            trie.append(contentsOf: vocab.map { $0.token })
+        }
         // TODO: set fuse_unk to true
     }
     
