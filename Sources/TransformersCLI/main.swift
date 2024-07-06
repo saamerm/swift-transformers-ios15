@@ -5,7 +5,7 @@ import Foundation
 import Models
 import Generation
 
-@available(iOS 16.2, macOS 13.1, *)
+@available(iOS 15, macOS 13.1, *)
 struct TransformersCLI: ParsableCommand {
     static let configuration = CommandConfiguration(
         abstract: "Run text generation on a Core ML language model",
@@ -83,7 +83,7 @@ struct TransformersCLI: ParsableCommand {
     }
 }
 
-@available(iOS 16.2, macOS 13.1, *)
+@available(iOS 15, macOS 13.1, *)
 enum ComputeUnits: String, ExpressibleByArgument, CaseIterable {
     case all, cpuAndGPU, cpuOnly, cpuAndNeuralEngine
     var asMLComputeUnits: MLComputeUnits {
@@ -96,7 +96,7 @@ enum ComputeUnits: String, ExpressibleByArgument, CaseIterable {
     }
 }
 
-if #available(iOS 16.2, macOS 13.1, *) {
+if #available(iOS 15, macOS 13.1, *) {
     TransformersCLI.main()
 } else {
     print("Unsupported OS")
