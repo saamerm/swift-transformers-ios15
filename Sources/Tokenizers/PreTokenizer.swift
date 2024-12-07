@@ -46,6 +46,7 @@ enum PreTokenizerType: String {
     case Whitespace
     case WhitespaceSplit
     case Metaspace
+    case BertPreTokenizer
     // Several more to be supported
     case Unknown = ""
 }
@@ -63,8 +64,22 @@ struct PreTokenizerFactory {
         case .Split: return SplitPreTokenizer(config: config)
         case .Whitespace, .WhitespaceSplit: return WhitespacePreTokenizer(config: config)
         case .Metaspace: return MetaspacePreTokenizer(config: config)
+        case .BertPreTokenizer: return BertPreTokenizer(config: config)
         default: fatalError("Unsupported PreTokenizer type: \(typeName)")
         }
+    }
+}
+
+class BertPreTokenizer: PreTokenizer {
+    let re: String
+
+    required init(config: Config) {
+        // Ref: https://github.com/huggingface/transformers.js/blob/27920d84831e323275b38f0b5186644b7936e1a2/src/tokenizers.js#L1002
+        re = "[^\\s\(Constants.PUNCTUATION_REGEX)]+|[\(Constants.PUNCTUATION_REGEX)]"
+    }
+
+    func preTokenize(text: String, options: PreTokenizerOptions = [.firstSection]) -> [String] {
+        return text.ranges(of: re).map { String(text[$0]) }
     }
 }
 
@@ -184,11 +199,10 @@ class ByteLevelPreTokenizer: PreTokenizer {
 }
 
 class PunctuationPreTokenizer: PreTokenizer {
-    let PUNCTUATION_REGEX = #"\p{P}\u0021-\u002F\u003A-\u0040\u005B-\u0060\u007B-\u007E"#
     let re: String
 
     required init(config: Config) {
-        re = "[^\(PUNCTUATION_REGEX)]+|[\(PUNCTUATION_REGEX)]+"
+        re = "[^\(Constants.PUNCTUATION_REGEX)]+|[\(Constants.PUNCTUATION_REGEX)]+"
     }
 
     func preTokenize(text: String, options: PreTokenizerOptions = [.firstSection]) -> [String] {
@@ -288,22 +302,25 @@ public extension String {
         let selfRange = NSRange(startIndex..<endIndex, in: self)
         let matches = captureRegex.matches(in: self, options: [], range: selfRange)
 
-        if matches.first == nil { return [self] }
+        if matches.isEmpty { return [self] }
 
         var result: [String] = []
         var start = startIndex
         for match in matches {
-            // Append prefix before matched separator
-            let prefixEnd = index(startIndex, offsetBy: match.range.lowerBound)
-            if start < prefixEnd {
-                result.append(String(self[start..<prefixEnd]))
+            // Safely move the prefix end to the start of the current match
+            let safePrefixEnd = index(startIndex, offsetBy: match.range.lowerBound, limitedBy: endIndex) ?? endIndex
+            if start < safePrefixEnd {
+                result.append(String(self[start..<safePrefixEnd]))
             }
-            start = index(startIndex, offsetBy: match.range.upperBound)
+
+            // Safely move the start index to the end of the current match
+            let matchEndIndex = index(startIndex, offsetBy: match.range.upperBound, limitedBy: endIndex) ?? endIndex
+            start = matchEndIndex
 
             // Append separator, supporting capture groups
             for r in (0..<match.numberOfRanges).reversed() {
                 let matchRange = match.range(at: r)
-                if let sepRange = Range(matchRange, in:self) {
+                if let sepRange = Range(matchRange, in: self) {
                     result.append(String(self[sepRange]))
                     break
                 }
@@ -311,9 +328,8 @@ public extension String {
         }
 
         // Append remaining suffix
-        let beginningOfEnd = index(startIndex, offsetBy: matches.last!.range.upperBound)
-        if beginningOfEnd < endIndex {
-            result.append(String(self[beginningOfEnd...]))
+        if start < endIndex {
+            result.append(String(self[start...]))
         }
 
         return result
