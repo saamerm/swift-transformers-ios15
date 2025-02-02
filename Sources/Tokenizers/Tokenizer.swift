@@ -7,7 +7,6 @@
 
 import Hub
 import Foundation
-import Jinja
 
 enum TokenizerError: Error {
     case missingConfig
@@ -394,32 +393,32 @@ public class PreTrainedTokenizer: Tokenizer {
             throw TokenizerError.chatTemplate("No chat template was specified")
         }
 
-        let template = try Template(selectedChatTemplate)
-        var context: [String: Any] = [
-            "messages": messages,
-            "add_generation_prompt": addGenerationPrompt
-            // TODO: Add `tools` entry when support is added in Jinja
-            // "tools": tools
-        ]
+        // let template = try Template(selectedChatTemplate)
+        // var context: [String: Any] = [
+        //     "messages": messages,
+        //     "add_generation_prompt": addGenerationPrompt
+        //     // TODO: Add `tools` entry when support is added in Jinja
+        //     // "tools": tools
+        // ]
 
-        // TODO: maybe keep NSString here
-        for (key, value) in tokenizerConfig.dictionary as [String : Any] {
-            if specialTokenAttributes.contains(key), !(value is NSNull) {
-                context[key] = value
-            }
-        }
+        // // TODO: maybe keep NSString here
+        // for (key, value) in tokenizerConfig.dictionary as [String : Any] {
+        //     if specialTokenAttributes.contains(key), !(value is NSNull) {
+        //         context[key] = value
+        //     }
+        // }
 
-        let rendered = try template.render(context)
-        var encodedTokens = encode(text: rendered, addSpecialTokens: false)
-        var maxLength = maxLength ?? encodedTokens.count
-        maxLength = min(maxLength, tokenizerConfig.modelMaxLength?.intValue ?? maxLength)
-        if encodedTokens.count > maxLength {
-            if truncation {
-                encodedTokens = Array(encodedTokens.prefix(maxLength))
-            }
-        }
+        // let rendered = try template.render(context)
+        // var encodedTokens = encode(text: rendered, addSpecialTokens: false)
+        // var maxLength = maxLength ?? encodedTokens.count
+        // maxLength = min(maxLength, tokenizerConfig.modelMaxLength?.intValue ?? maxLength)
+        // if encodedTokens.count > maxLength {
+        //     if truncation {
+        //         encodedTokens = Array(encodedTokens.prefix(maxLength))
+        //     }
+        // }
 
-        return encodedTokens
+        return [0]
     }
 }
 
