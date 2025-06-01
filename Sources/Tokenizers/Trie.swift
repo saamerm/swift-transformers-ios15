@@ -34,7 +34,10 @@ public extension Trie {
     }
     
     func append(contentsOf container: any Sequence<any Sequence<T>>) {
-        for t in container { insert(t) }
+        if #available(iOS 16.0, *) {
+
+            for t in container { insert(t) }
+        }
     }
         
     /// Find all leaf nodes that share a common prefix with the input sequence (usually a text)
